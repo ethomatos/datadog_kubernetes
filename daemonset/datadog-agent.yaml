@@ -20,7 +20,7 @@ spec:
         ports:
           - containerPort: 8125
             # Custom metrics via DogStatsD - uncomment this section to enable custom metrics collection
-            # hostPort: 8125
+            hostPort: 8125
             name: dogstatsdport
             protocol: UDP
           - containerPort: 8126
