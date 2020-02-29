@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: datadog-agent
+  namespace: default
 spec:
   selector:
     matchLabels:
@@ -11,6 +12,8 @@ spec:
       labels:
         app: datadog-agent
       name: datadog-agent
+      annotations:
+        container.apparmor.security.beta.kubernetes.io/system-probe: unconfined
     spec:
       serviceAccountName: datadog-agent
       containers:
@@ -54,6 +57,14 @@ spec:
             value: "true"
           - name: DD_LOGS_ENABLED
             value: "true"
+          - name: DD_PROCESS_AGENT_ENABLED
+            value: "true"
+          - name: DD_SYSTEM_PROBE_ENABLED
+            value: "true"
+          - name: DD_SYSTEM_PROBE_EXTERNAL
+            value: "true"
+          - name: DD_SYSPROBE_SOCKET
+            value: /var/run/s6/sysprobe.sock
           - name: DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL
             value: "true"
           - name: KUBERNETES
@@ -62,6 +73,10 @@ spec:
             value: "false"
           - name: DD_HEALTH_PORT
             value: "5555"
+          - name: DD_CRI_SOCKET_PATH
+            value: /host/var/run/docker.sock
+          - name: DOCKER_HOST
+            value: unix:///host/var/run/docker.sock
         resources:
           requests:
             memory: "256Mi"
@@ -70,8 +85,14 @@ spec:
             memory: "256Mi"
             cpu: "200m"
         volumeMounts:
+          - name: debugfs
+            mountPath: /sys/kernel/debug
+          - name: s6-run
+            mountPath: /var/run/s6
           - name: dockersocket
             mountPath: /var/run/docker.sock
+          - name: dockersocketdir
+            mountPath: /host/var/run
           - name: pointdir
             mountPath: /opt/datadog-agent/run
           - name: logpodpath
@@ -103,7 +124,51 @@ spec:
           timeoutSeconds: 5
           successThreshold: 1
           failureThreshold: 3
+      - image: datadog/agent:7
+        name: system-probe
+        imagePullPolicy: Always
+        securityContext:
+          capabilities:
+            add:
+              - SYS_ADMIN
+              - SYS_RESOURCE
+              - SYS_PTRACE
+              - NET_ADMIN
+              - IPC_LOCK
+        command:
+          - /opt/datadog-agent/embedded/bin/system-probe
+        env:
+          - name: DD_SYSTEM_PROBE_ENABLED
+            value: 'true'
+          - name: DD_SYSPROBE_SOCKET
+            value: /var/run/s6/sysprobe.sock
+        resources:
+          requests:
+            memory: 150Mi
+            cpu: 200m
+          limits:
+            memory: 150Mi
+            cpu: 200m
+        volumeMounts:
+          - name: procdir
+            mountPath: /host/proc
+            readOnly: true
+          - name: cgroups
+            mountPath: /host/sys/fs/cgroup
+            readOnly: true
+          - name: debugfs
+            mountPath: /sys/kernel/debug
+          - name: s6-run
+            mountPath: /var/run/s6
       volumes:
+        - name: s6-run
+          emptyDir: {}
+        - hostPath:
+            path: /sys/kernel/debug
+          name: debugfs
+        - hostPath:
+            path: /var/run
+          name: dockersocketdir
         - hostPath:
             path: /var/run/docker.sock
           name: dockersocket
