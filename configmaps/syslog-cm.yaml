@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: syslog-configmap
+  namespace: default
+data:
+  conf.yaml: |-
+    logs:
+      - type: file
+        path: /var/log/syslog
+        service: syslog
+        source: ubuntu
