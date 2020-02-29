@@ -38,6 +38,8 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: status.hostIP
+          - name: DD_TAGS
+            value: "owner:et cloud_provider:onprem"
           - name: DD_APM_ENABLED
             value: "true"
           - name: DD_HOSTNAME
