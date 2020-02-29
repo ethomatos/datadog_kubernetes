@@ -72,6 +72,8 @@ spec:
         volumeMounts:
           - name: dockersocket
             mountPath: /var/run/docker.sock
+          - name: syslog
+            mountPath: /var/log/syslog
           - name: pointdir
             mountPath: /opt/datadog-agent/run
           - name: logpodpath
@@ -106,6 +108,9 @@ spec:
           successThreshold: 1
           failureThreshold: 3
       volumes:
+        - hostPath:
+            path: /var/log/syslog
+          name: syslog
         - hostPath:
             path: /var/run/docker.sock
           name: dockersocket
