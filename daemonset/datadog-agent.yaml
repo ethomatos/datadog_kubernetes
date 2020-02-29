@@ -94,6 +94,8 @@ spec:
             mountPath: /etc/kubernetes/pki/etcd/
           - name: kube-apiserver-metrics-config
             mountPath: /etc/datadog-agent/conf.d/kube_apiserver_metrics.d
+          - name: syslog-config
+            mountPath: /etc/datadog-agent/conf.d/ubuntu.d
         livenessProbe:
           httpGet:
             path: /health
@@ -125,6 +127,9 @@ spec:
         - hostPath:
             path: /etc/kubernetes/pki/etcd
           name: etcd-pki
+        - name: syslog-config
+          configMap:
+            name: syslog-configmap
         - name: kube-scheduler-config
           configMap:
             name: kube-scheduler-configmap
